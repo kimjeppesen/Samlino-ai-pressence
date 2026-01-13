@@ -57,7 +57,7 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
       ? '/.netlify/functions/openai-proxy'
       : 'https://api.openai.com/v1/chat/completions';
     
-    const requestBody = {
+    const requestBody: any = {
       model,
       messages: [
         {
@@ -69,8 +69,8 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
           content: query,
         },
       ],
-      temperature: 0.7,
-      // Token limits are managed in API settings, not in code
+      // Token limits and temperature are managed in API settings, not in code
+      // Some models (like gpt-5-mini) only support default temperature values
     };
     
     // If using proxy, include API key in request body
