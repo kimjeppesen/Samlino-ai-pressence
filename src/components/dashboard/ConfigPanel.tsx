@@ -72,7 +72,7 @@ export function ConfigPanel() {
               },
               body: JSON.stringify({
                 model: config.api.anthropic?.model || 'claude-3-5-haiku-20241022',
-                // Token limits are managed in API settings, not in code
+                max_tokens: 200, // Required by Claude API - small limit for testing
                 messages: [{ role: 'user', content: testQuery }],
               }),
             });

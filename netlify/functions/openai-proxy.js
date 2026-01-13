@@ -38,47 +38,77 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Forward request to OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(openaiRequest),
-    });
-
-    const responseText = await response.text();
-    let data;
+    // Forward request to OpenAI with timeout handling
+    // Netlify Functions have a 10s default timeout, 26s max on free tier
+    // Use 20 seconds to be safe (well under the limit)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
     
     try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      // If response is not JSON, return error
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(openaiRequest),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        // If response is not JSON, return error
+        return {
+          statusCode: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            error: {
+              message: 'Invalid response from OpenAI API',
+              type: 'invalid_response',
+              response: responseText.substring(0, 500)
+            }
+          }),
+        };
+      }
+
       return {
-        statusCode: 500,
+        statusCode: response.status,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          error: {
-            message: 'Invalid response from OpenAI API',
-            type: 'invalid_response',
-            response: responseText.substring(0, 500)
-          }
-        }),
+        body: JSON.stringify(data),
       };
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError' || fetchError.message.includes('timeout')) {
+        return {
+          statusCode: 504,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            error: {
+              message: 'Request timeout - the API call took too long. Try processing queries one at a time or reduce the number of queries.',
+              type: 'timeout_error'
+            }
+          }),
+        };
+      }
+      
+      throw fetchError;
     }
-
-    return {
-      statusCode: response.status,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    };
   } catch (error) {
     console.error('OpenAI proxy error:', error);
     return {

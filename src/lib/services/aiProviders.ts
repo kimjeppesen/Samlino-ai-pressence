@@ -202,7 +202,7 @@ export async function callClaude(query: string): Promise<AIResponse> {
       },
       body: JSON.stringify({
         model,
-        // Token limits are managed in API settings, not in code
+        max_tokens: 4096, // Required by Claude API - set reasonable default
         system: systemMessage,
         messages: [
           {

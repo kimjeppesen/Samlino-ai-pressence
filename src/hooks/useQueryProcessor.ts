@@ -60,18 +60,70 @@ export function useQueryProcessor(): UseQueryProcessorReturn {
     setProgress({ current: 0, total: queries.length });
     
     try {
-      const processed = await processQueries(queries, {
-        ...options,
-        onProgress: (current, total) => {
-          setProgress({ current, total });
-        },
-      });
+      // Process queries sequentially (one at a time) to avoid Netlify Function timeouts
+      // Each query is processed completely before moving to the next
+      const processed: ProcessedQuery[] = [];
+      const allResults: QueryResult[] = [];
       
-      setProcessedQueries(prev => [...prev, ...processed]);
+      for (let i = 0; i < queries.length; i++) {
+        const query = queries[i];
+        console.log(`[useQueryProcessor] Processing query ${i + 1}/${queries.length}: "${query.query.substring(0, 50)}..."`);
+        
+        try {
+          // Process this single query through all platforms
+          const result = await processQuery(query, {
+            ...options,
+            onProgress: (current, total) => {
+              // Update progress for this query
+              setProgress({ current: processed.length + 1, total: queries.length });
+            },
+          });
+          
+          processed.push(result);
+          
+          // Save results incrementally after each query
+          if (result.results.length > 0) {
+            allResults.push(...result.results);
+            
+            // Update state with new results immediately
+            setResults(prev => {
+              const combined = [...prev, ...result.results];
+              const unique = Array.from(
+                new Map(combined.map(item => [item.id, item])).values()
+              );
+              return unique;
+            });
+            
+            // Save to storage incrementally
+            saveQueryResults(result.results);
+            console.log(`[useQueryProcessor] Saved ${result.results.length} results for query ${i + 1}`);
+          }
+          
+          // Update progress
+          setProgress({ current: processed.length, total: queries.length });
+          setProcessedQueries(prev => [...prev, result]);
+          
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to process query';
+          console.error(`[useQueryProcessor] Error processing query ${i + 1}:`, errorMessage);
+          
+          // Add error result to maintain count
+          const errorResult: ProcessedQuery = {
+            ...query,
+            results: [],
+            processedAt: new Date().toISOString(),
+            status: 'error',
+            error: errorMessage,
+          };
+          processed.push(errorResult);
+          setProcessedQueries(prev => [...prev, errorResult]);
+          setProgress({ current: processed.length, total: queries.length });
+          
+          // Continue with next query even if this one failed
+        }
+      }
       
-      // Extract all results
-      const allResults = processed.flatMap(p => p.results);
-      console.log(`[useQueryProcessor] Processed ${processed.length} queries, got ${allResults.length} results`);
+      console.log(`[useQueryProcessor] Processed ${processed.length} queries, got ${allResults.length} total results`);
       
       // Log any queries that failed
       const failedQueries = processed.filter(p => p.status === 'error' || p.results.length === 0);
@@ -87,19 +139,7 @@ export function useQueryProcessor(): UseQueryProcessorReturn {
       }
       
       if (allResults.length > 0) {
-        console.log('[useQueryProcessor] Saving results to storage...');
-        setResults(prev => {
-          const combined = [...prev, ...allResults];
-          const unique = Array.from(
-            new Map(combined.map(item => [item.id, item])).values()
-          );
-          console.log(`[useQueryProcessor] Combined ${prev.length} existing + ${allResults.length} new = ${unique.length} unique results`);
-          return unique;
-        });
-        saveQueryResults(allResults);
-        console.log('[useQueryProcessor] Results saved successfully');
-        
-        // Create and save historical snapshot
+        // Create and save historical snapshot at the end
         const { createSnapshot, saveSnapshot } = await import('@/lib/services/historicalTracking');
         const { loadQueryResults } = await import('@/lib/services/dataStorage');
         const allStoredResults = loadQueryResults();
@@ -111,15 +151,6 @@ export function useQueryProcessor(): UseQueryProcessorReturn {
       } else {
         const errorMsg = 'No results returned from API. Check API key configuration and network connection. See console for details.';
         console.warn('[useQueryProcessor]', errorMsg);
-        if (processed.length > 0) {
-          console.warn('[useQueryProcessor] Processed queries details:', processed.map(p => ({ 
-            id: p.id, 
-            query: p.query.substring(0, 50),
-            status: p.status, 
-            resultsCount: p.results.length, 
-            error: p.error 
-          })));
-        }
         setError(errorMsg);
       }
     } catch (err) {

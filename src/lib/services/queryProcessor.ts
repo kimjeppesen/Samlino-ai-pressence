@@ -121,7 +121,9 @@ export async function processQuery(
         console.log(`[Query Processor] Created result for ${platform}, total results: ${results.length}`);
 
         // Add delay between API calls to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Longer delay for OpenAI to avoid Netlify Function timeouts
+        const delay = platform === 'ChatGPT' ? 2000 : 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`[Query Processor] Error processing query "${query.query}" on ${platform}:`, errorMessage);
@@ -150,48 +152,73 @@ export async function processQuery(
 }
 
 /**
- * Process multiple queries in batches
+ * Process multiple queries sequentially (one at a time)
+ * This avoids Netlify Function timeouts by processing each query individually
  */
 export async function processQueries(
   queries: Query[],
   options: ProcessingOptions = {}
 ): Promise<ProcessedQuery[]> {
-  console.log(`[Query Processor] Starting batch processing of ${queries.length} queries`);
+  console.log(`[Query Processor] Starting sequential processing of ${queries.length} queries`);
   
   const availablePlatforms = getAvailablePlatforms();
   console.log(`[Query Processor] Available platforms:`, availablePlatforms);
   
-  const batchSize = options.batchSize || 3;
   const onProgress = options.onProgress;
   const processed: ProcessedQuery[] = [];
   const total = queries.length;
 
-  // Process in batches to avoid overwhelming APIs
-  for (let i = 0; i < queries.length; i += batchSize) {
-    const batch = queries.slice(i, i + batchSize);
-    console.log(`[Query Processor] Processing batch ${Math.floor(i / batchSize) + 1}, queries ${i + 1}-${Math.min(i + batchSize, total)}`);
+  // Process queries one by one (sequentially) to avoid timeout issues
+  // Each query is processed completely before moving to the next
+  for (let i = 0; i < queries.length; i++) {
+    const query = queries[i];
+    console.log(`[Query Processor] Processing query ${i + 1}/${total}: "${query.query.substring(0, 50)}..."`);
     
-    const batchPromises = batch.map(query => processQuery(query, options));
-    const batchResults = await Promise.all(batchPromises);
-    
-    const totalResults = batchResults.reduce((sum, p) => sum + p.results.length, 0);
-    console.log(`[Query Processor] Batch completed, got ${totalResults} total results`);
-    
-    processed.push(...batchResults);
-    
-    if (onProgress) {
-      onProgress(processed.length, total);
-    }
-
-    // Delay between batches
-    if (i + batchSize < queries.length) {
-      console.log('[Query Processor] Waiting 2 seconds before next batch...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Process this single query through all platforms
+      const result = await processQuery(query, options);
+      processed.push(result);
+      
+      const resultCount = result.results.length;
+      console.log(`[Query Processor] Completed query ${i + 1}/${total}, got ${resultCount} results`);
+      
+      // Update progress after each query
+      if (onProgress) {
+        onProgress(processed.length, total);
+      }
+      
+      // Small delay between queries to avoid rate limits
+      // Longer delay for ChatGPT to avoid Netlify Function timeouts
+      if (i < queries.length - 1) {
+        const hasChatGPT = availablePlatforms.includes('ChatGPT');
+        const delay = hasChatGPT ? 2000 : 1000;
+        console.log(`[Query Processor] Waiting ${delay}ms before next query...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[Query Processor] Failed to process query ${i + 1}/${total}:`, errorMessage);
+      
+      // Add error result to maintain count
+      processed.push({
+        ...query,
+        results: [],
+        processedAt: new Date().toISOString(),
+        status: 'error',
+        error: errorMessage,
+      });
+      
+      if (onProgress) {
+        onProgress(processed.length, total);
+      }
+      
+      // Continue with next query even if this one failed
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 
   const finalTotalResults = processed.reduce((sum, p) => sum + p.results.length, 0);
-  console.log(`[Query Processor] All batches completed. Total queries processed: ${processed.length}, Total results: ${finalTotalResults}`);
+  console.log(`[Query Processor] All queries completed. Total queries processed: ${processed.length}, Total results: ${finalTotalResults}`);
   
   return processed;
 }
