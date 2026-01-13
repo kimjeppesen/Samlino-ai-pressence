@@ -57,7 +57,10 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
       ? '/.netlify/functions/openai-proxy'
       : 'https://api.openai.com/v1/chat/completions';
     
-    const requestBody = {
+    // Determine if this is a newer model that uses max_completion_tokens
+    const isNewerModel = model.includes('gpt-4o') || model.includes('gpt-5') || model.includes('o1');
+    
+    const requestBody: any = {
       model,
       messages: [
         {
@@ -71,6 +74,14 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
       ],
       temperature: 0.7,
     };
+    
+    // Set token limit based on model type
+    // Use 4096 tokens for completion to allow full responses
+    if (isNewerModel) {
+      requestBody.max_completion_tokens = 4096;
+    } else {
+      requestBody.max_tokens = 4096;
+    }
     
     // If using proxy, include API key in request body
     const body = isNetlify

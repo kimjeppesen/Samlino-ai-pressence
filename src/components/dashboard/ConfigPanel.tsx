@@ -85,10 +85,11 @@ export function ConfigPanel() {
               messages: [{ role: 'user', content: testQuery }],
             };
             // Use max_completion_tokens for newer models, max_tokens for older ones
+            // Set reasonable limit for testing (200 tokens is enough for a test response)
             if (isNewerModel) {
-              requestBody.max_completion_tokens = 10;
+              requestBody.max_completion_tokens = 200;
             } else {
-              requestBody.max_tokens = 10;
+              requestBody.max_tokens = 200;
             }
             
             // Detect if we're on Netlify and use proxy function to avoid CORS issues
