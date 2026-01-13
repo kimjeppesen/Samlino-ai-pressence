@@ -48,7 +48,28 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(openaiRequest),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      // If response is not JSON, return error
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          error: {
+            message: 'Invalid response from OpenAI API',
+            type: 'invalid_response',
+            response: responseText.substring(0, 500)
+          }
+        }),
+      };
+    }
 
     return {
       statusCode: response.status,

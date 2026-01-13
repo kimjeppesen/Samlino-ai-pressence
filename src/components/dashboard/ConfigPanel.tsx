@@ -163,20 +163,35 @@ export function ConfigPanel() {
       
       console.log(`[Test] ${platform} response status:`, response.status);
       
+      // Get response text first to handle both success and error cases
+      const responseText = await response.text();
+      console.log(`[Test] ${platform} response body:`, responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error(`[Test] ${platform} JSON parse error:`, parseError, 'Response text:', responseText);
+        alert(`❌ API key test failed: Invalid response format. Check console for details.`);
+        return;
+      }
+      
       if (response.ok) {
-        let data;
         if (platform === 'google') {
-          data = await response.json();
           const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (content) {
             console.log(`[Test] ${platform} success:`, data);
             alert('✅ API key is valid!');
           } else {
-            console.error(`[Test] ${platform} error:`, data);
-            alert(`❌ API key test failed: No content in response`);
+            console.error(`[Test] ${platform} error - no content:`, data);
+            // Check if there's an error in the response
+            if (data.error) {
+              alert(`❌ API key test failed: ${data.error.message || JSON.stringify(data.error)}`);
+            } else {
+              alert(`❌ API key test failed: No content in response. Response: ${JSON.stringify(data).substring(0, 200)}`);
+            }
           }
         } else {
-          data = await response.json();
           const content = platform === 'anthropic' 
             ? data.content?.[0]?.text 
             : data.choices?.[0]?.message?.content;
@@ -184,8 +199,26 @@ export function ConfigPanel() {
             console.log(`[Test] ${platform} success:`, data);
             alert('✅ API key is valid!');
           } else {
-            console.error(`[Test] ${platform} error:`, data);
-            alert(`❌ API key test failed: No content in response`);
+            console.error(`[Test] ${platform} error - no content:`, data);
+            // Check if there's an error in the response
+            if (data.error) {
+              const errorMsg = data.error.message || JSON.stringify(data.error);
+              // Provide helpful messages for common errors
+              if (errorMsg.includes('model') && (errorMsg.includes('not found') || errorMsg.includes('does not exist'))) {
+                alert(`❌ Model Error: The model "${config.api.openai?.model || 'gpt-5-nano'}" may not exist or you don't have access.\n\nTry: gpt-4o, gpt-4o-mini, gpt-4-turbo, or gpt-3.5-turbo\n\nFull error: ${errorMsg}`);
+              } else {
+                alert(`❌ API key test failed: ${errorMsg}`);
+              }
+            } else {
+              // For OpenAI, check if it's a usage-based response or empty choices
+              if (platform === 'openai' && data.choices && data.choices.length === 0) {
+                alert(`❌ API key test failed: Empty choices array. This might indicate a model issue. Check that the model "${config.api.openai?.model || 'gpt-5-nano'}" is valid.\n\nResponse: ${JSON.stringify(data).substring(0, 200)}`);
+              } else if (platform === 'openai' && data.choices && data.choices[0] && !data.choices[0].message) {
+                alert(`❌ API key test failed: Invalid response structure. Response: ${JSON.stringify(data).substring(0, 300)}`);
+              } else {
+                alert(`❌ API key test failed: No content in response.\n\nThis might mean:\n1. The model name is invalid\n2. The API returned an unexpected format\n\nCheck console for full response.`);
+              }
+            }
           }
         }
       } else {
