@@ -72,25 +72,17 @@ export function ConfigPanel() {
               },
               body: JSON.stringify({
                 model: config.api.anthropic?.model || 'claude-3-5-haiku-20241022',
-                max_tokens: 10,
+                // Token limits are managed in API settings, not in code
                 messages: [{ role: 'user', content: testQuery }],
               }),
             });
           } else if (platform === 'openai') {
             const model = config.api.openai?.model || 'gpt-5-mini';
-            // Newer models (gpt-4o, gpt-5, o1, etc.) use max_completion_tokens instead of max_tokens
-            const isNewerModel = model.includes('gpt-4o') || model.includes('gpt-5') || model.includes('o1');
             const requestBody: any = {
               model,
               messages: [{ role: 'user', content: testQuery }],
             };
-            // Use max_completion_tokens for newer models, max_tokens for older ones
-            // Set reasonable limit for testing (200 tokens is enough for a test response)
-            if (isNewerModel) {
-              requestBody.max_completion_tokens = 200;
-            } else {
-              requestBody.max_tokens = 200;
-            }
+            // Token limits are managed in API settings, not in code
             
             // Detect if we're on Netlify and use proxy function to avoid CORS issues
             const isNetlify = window.location.hostname.includes('netlify.app');
@@ -135,7 +127,7 @@ export function ConfigPanel() {
           body: JSON.stringify({
             model: config.api.perplexity?.model || 'pplx-70b-online',
             messages: [{ role: 'user', content: testQuery }],
-            max_tokens: 10,
+            // Token limits are managed in API settings, not in code
           }),
         });
       } else if (platform === 'google') {
@@ -151,9 +143,7 @@ export function ConfigPanel() {
               contents: [{
                 parts: [{ text: testQuery }],
               }],
-              generationConfig: {
-                maxOutputTokens: 10,
-              },
+              // Token limits are managed in API settings, not in code
             }),
           }
         );
