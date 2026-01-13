@@ -99,7 +99,6 @@ After saving ChatGPT API key and processing queries:
 
 ChatGPT API keys start with `sk-proj-` (newer format) or `sk-` (older format).
 
-Your key: `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`
 
 This looks correct! Make sure it's saved in Settings.
 
