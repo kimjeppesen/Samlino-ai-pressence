@@ -98,7 +98,7 @@ export function loadConfigFromStorage(): AppConfig | null {
       if (import.meta.env.VITE_OPENAI_API_KEY) {
         envConfig.api!.openai = {
           apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-          model: 'gpt-5-nano', // GPT-5 Nano
+          model: 'gpt-5-mini', // GPT-5 Mini
         };
       }
       if (import.meta.env.VITE_PERPLEXITY_API_KEY) {

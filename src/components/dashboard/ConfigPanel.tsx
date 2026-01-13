@@ -77,8 +77,8 @@ export function ConfigPanel() {
               }),
             });
           } else if (platform === 'openai') {
-            const model = config.api.openai?.model || 'gpt-5-nano';
-            // Newer models (gpt-4o, gpt-5, etc.) use max_completion_tokens instead of max_tokens
+            const model = config.api.openai?.model || 'gpt-5-mini';
+            // Newer models (gpt-4o, gpt-5, o1, etc.) use max_completion_tokens instead of max_tokens
             const isNewerModel = model.includes('gpt-4o') || model.includes('gpt-5') || model.includes('o1');
             const requestBody: any = {
               model,
@@ -192,32 +192,70 @@ export function ConfigPanel() {
             }
           }
         } else {
-          const content = platform === 'anthropic' 
-            ? data.content?.[0]?.text 
-            : data.choices?.[0]?.message?.content;
-          if (content) {
+          // Handle different response structures
+          let content: string | undefined;
+          
+          if (platform === 'anthropic') {
+            content = data.content?.[0]?.text;
+          } else if (platform === 'openai') {
+            // OpenAI response structure: data.choices[0].message.content
+            const choice = data.choices?.[0];
+            if (choice) {
+              // Check for finish_reason to understand why content might be missing
+              if (choice.finish_reason === 'length' && !choice.message?.content) {
+                // Content was cut off due to token limit
+                content = choice.message?.content || choice.delta?.content || '';
+                console.log(`[Test] ${platform} content was truncated (finish_reason: length)`);
+              } else {
+                content = choice.message?.content || choice.delta?.content;
+              }
+              
+              // Log the full choice structure for debugging
+              console.log(`[Test] ${platform} choice structure:`, {
+                hasMessage: !!choice.message,
+                hasContent: !!choice.message?.content,
+                finishReason: choice.finish_reason,
+                choice: choice
+              });
+            }
+          } else {
+            // Perplexity uses same structure as OpenAI
+            content = data.choices?.[0]?.message?.content;
+          }
+          
+          if (content && content.trim().length > 0) {
             console.log(`[Test] ${platform} success:`, data);
             alert('✅ API key is valid!');
           } else {
             console.error(`[Test] ${platform} error - no content:`, data);
+            console.error(`[Test] ${platform} choices:`, data.choices);
+            console.error(`[Test] ${platform} first choice:`, data.choices?.[0]);
+            
             // Check if there's an error in the response
             if (data.error) {
               const errorMsg = data.error.message || JSON.stringify(data.error);
               // Provide helpful messages for common errors
               if (errorMsg.includes('model') && (errorMsg.includes('not found') || errorMsg.includes('does not exist'))) {
-                alert(`❌ Model Error: The model "${config.api.openai?.model || 'gpt-5-nano'}" may not exist or you don't have access.\n\nTry: gpt-4o, gpt-4o-mini, gpt-4-turbo, or gpt-3.5-turbo\n\nFull error: ${errorMsg}`);
+                alert(`❌ Model Error: The model "${config.api.openai?.model || 'gpt-5-mini'}" may not exist or you don't have access.\n\nTry: gpt-5-mini, gpt-4o, gpt-4o-mini, gpt-4-turbo, or gpt-3.5-turbo\n\nFull error: ${errorMsg}`);
               } else {
                 alert(`❌ API key test failed: ${errorMsg}`);
               }
-            } else {
-              // For OpenAI, check if it's a usage-based response or empty choices
-              if (platform === 'openai' && data.choices && data.choices.length === 0) {
-                alert(`❌ API key test failed: Empty choices array. This might indicate a model issue. Check that the model "${config.api.openai?.model || 'gpt-5-nano'}" is valid.\n\nResponse: ${JSON.stringify(data).substring(0, 200)}`);
-              } else if (platform === 'openai' && data.choices && data.choices[0] && !data.choices[0].message) {
-                alert(`❌ API key test failed: Invalid response structure. Response: ${JSON.stringify(data).substring(0, 300)}`);
+            } else if (platform === 'openai' && data.choices && data.choices[0]) {
+              const choice = data.choices[0];
+              const finishReason = choice.finish_reason;
+              
+              if (finishReason === 'length') {
+                // Content was truncated - this is actually a success, just limited
+                alert('✅ API key is valid! (Response was truncated due to token limit, but API is working)');
+              } else if (finishReason === 'stop' && !choice.message?.content) {
+                alert(`❌ API key test failed: Response completed but no content returned.\n\nFinish reason: ${finishReason}\n\nThis might indicate a model issue. Check console for details.`);
               } else {
-                alert(`❌ API key test failed: No content in response.\n\nThis might mean:\n1. The model name is invalid\n2. The API returned an unexpected format\n\nCheck console for full response.`);
+                alert(`❌ API key test failed: No content in response.\n\nFinish reason: ${finishReason}\n\nCheck console for full response structure.`);
               }
+            } else if (platform === 'openai' && data.choices && data.choices.length === 0) {
+              alert(`❌ API key test failed: Empty choices array. This might indicate a model issue. Check that the model "${config.api.openai?.model || 'gpt-5-mini'}" is valid.\n\nResponse: ${JSON.stringify(data).substring(0, 200)}`);
+            } else {
+              alert(`❌ API key test failed: No content in response.\n\nThis might mean:\n1. The model name is invalid\n2. The API returned an unexpected format\n\nCheck console for full response.`);
             }
           }
         }
@@ -245,7 +283,7 @@ export function ConfigPanel() {
         } else if (response.status === 401) {
           userFriendlyMsg = `Invalid API key. Check that the key is correct and hasn't been revoked.`;
         } else if (response.status === 404) {
-          userFriendlyMsg = `Model not found. The model "${config.api.openai?.model || 'gpt-5-nano'}" may not be available. Try a different model.`;
+          userFriendlyMsg = `Model not found. The model "${config.api.openai?.model || 'gpt-5-mini'}" may not be available. Try a different model.`;
         }
         
         alert(`❌ API key test failed (${response.status}): ${userFriendlyMsg}`);
@@ -356,7 +394,7 @@ export function ConfigPanel() {
                                openai: {
                                  ...config.api.openai,
                                  apiKey: e.target.value,
-                                 model: config.api.openai?.model || 'gpt-5-nano',
+                                 model: config.api.openai?.model || 'gpt-5-mini',
                                },
                              },
                       })
@@ -385,7 +423,7 @@ export function ConfigPanel() {
                        <Label htmlFor="openai-model" className="text-xs">Model</Label>
                        <Input
                          id="openai-model"
-                         value={config.api.openai?.model || 'gpt-5-nano'}
+                         value={config.api.openai?.model || 'gpt-5-mini'}
                          onChange={(e) =>
                            setConfig({
                              ...config,
@@ -399,7 +437,7 @@ export function ConfigPanel() {
                              },
                            })
                          }
-                         placeholder="gpt-5-nano"
+                         placeholder="gpt-5-mini"
                          className="text-xs"
                        />
                      </div>

@@ -40,7 +40,7 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
 
   console.log('[ChatGPT API] API key found:', apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4));
   
-  const model = config.api.openai?.model || 'gpt-5-nano';
+  const model = config.api.openai?.model || 'gpt-5-mini';
   const language = config.language?.code || 'da';
   const country = config.language?.country || 'DK';
   console.log('[ChatGPT API] Using model:', model);
