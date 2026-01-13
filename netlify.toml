@@ -8,9 +8,17 @@
   NODE_VERSION = "18"
 
 # Redirect all routes to index.html for client-side routing
+# But exclude Netlify Functions
 [[redirects]]
   from = "/*"
   to = "/index.html"
+  status = 200
+  force = false
+
+# Don't redirect Netlify Functions
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
 # Headers for security

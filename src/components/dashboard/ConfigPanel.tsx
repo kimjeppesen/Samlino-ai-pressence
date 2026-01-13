@@ -90,13 +90,39 @@ export function ConfigPanel() {
             } else {
               requestBody.max_tokens = 10;
             }
-            response = await fetch('https://api.openai.com/v1/chat/completions', {
+            
+            // Detect if we're on Netlify and use proxy function to avoid CORS issues
+            const isNetlify = window.location.hostname.includes('netlify.app');
+            const apiUrl = isNetlify 
+              ? '/.netlify/functions/openai-proxy'
+              : 'https://api.openai.com/v1/chat/completions';
+            
+            // If using proxy, include API key in request body
+            const body = isNetlify
+              ? JSON.stringify({ ...requestBody, apiKey })
+              : JSON.stringify(requestBody);
+            
+            const headers: Record<string, string> = {
+              'Content-Type': 'application/json',
+            };
+            
+            // Only add Authorization header if not using proxy
+            if (!isNetlify) {
+              headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+            
+            response = await fetch(apiUrl, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-              },
-              body: JSON.stringify(requestBody),
+              mode: 'cors',
+              headers,
+              body,
+            }).catch((fetchError) => {
+              console.error('[Test] OpenAI fetch error details:', fetchError);
+              // Re-throw with more context for CORS errors
+              if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('CORS') || fetchError.message.includes('NetworkError')) {
+                throw new Error('CORS/Network Error: OpenAI API may have CORS restrictions from this domain. The API key is likely valid - try processing queries to verify.');
+              }
+              throw fetchError;
             });
       } else if (platform === 'perplexity') {
         response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -194,8 +220,14 @@ export function ConfigPanel() {
     } catch (err) {
       console.error(`[Test] ${platform} fetch error:`, err);
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('CORS')) {
-        alert(`❌ CORS/Network Error: The API may not support direct browser requests. This is normal - the API key will still work when processing queries. Check console for details.`);
+      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('CORS') || errorMsg.includes('NetworkError')) {
+        // More helpful message for CORS errors
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        if (isProduction && platform === 'openai') {
+          alert(`❌ CORS/Network Error: OpenAI API test failed from this domain. This is often a CORS restriction on production domains.\n\n✅ Your API key is likely valid - try processing actual queries to verify.\n\n💡 If queries also fail, you may need to use a backend proxy for OpenAI API calls.`);
+        } else {
+          alert(`❌ CORS/Network Error: The API may not support direct browser requests from this domain. Your API key is likely valid - try processing queries to verify. Check console for details.`);
+        }
       } else {
         alert(`❌ Error: ${errorMsg}`);
       }

@@ -50,26 +50,54 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
     console.log('[ChatGPT API] Making fetch request...');
     // Add language context for Danish (Denmark)
     const systemMessage = `You are responding to queries in Danish (Denmark). Please provide responses in Danish when appropriate, and consider the Danish market context.`;
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    
+    // Detect if we're on Netlify and use proxy function to avoid CORS issues
+    const isNetlify = window.location.hostname.includes('netlify.app');
+    const apiUrl = isNetlify 
+      ? '/.netlify/functions/openai-proxy'
+      : 'https://api.openai.com/v1/chat/completions';
+    
+    const requestBody = {
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: systemMessage,
+        },
+        {
+          role: 'user',
+          content: query,
+        },
+      ],
+      temperature: 0.7,
+    };
+    
+    // If using proxy, include API key in request body
+    const body = isNetlify
+      ? JSON.stringify({ ...requestBody, apiKey })
+      : JSON.stringify(requestBody);
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Only add Authorization header if not using proxy
+    if (!isNetlify) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: systemMessage,
-          },
-          {
-            role: 'user',
-            content: query,
-          },
-        ],
-        temperature: 0.7,
-      }),
+      mode: 'cors',
+      headers,
+      body,
+    }).catch((fetchError) => {
+      console.error('[ChatGPT API] Fetch error details:', fetchError);
+      // If it's a CORS error, provide helpful message
+      if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('CORS') || fetchError.message.includes('NetworkError')) {
+        throw new Error('CORS/Network Error: Unable to reach OpenAI API. This may be a temporary network issue or CORS restriction. Please try again or check your network connection.');
+      }
+      throw fetchError;
     });
 
     console.log('[ChatGPT API] Response status:', response.status, response.statusText);
