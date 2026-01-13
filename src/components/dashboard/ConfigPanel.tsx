@@ -77,17 +77,26 @@ export function ConfigPanel() {
               }),
             });
           } else if (platform === 'openai') {
+            const model = config.api.openai?.model || 'gpt-5-nano';
+            // Newer models (gpt-4o, gpt-5, etc.) use max_completion_tokens instead of max_tokens
+            const isNewerModel = model.includes('gpt-4o') || model.includes('gpt-5') || model.includes('o1');
+            const requestBody: any = {
+              model,
+              messages: [{ role: 'user', content: testQuery }],
+            };
+            // Use max_completion_tokens for newer models, max_tokens for older ones
+            if (isNewerModel) {
+              requestBody.max_completion_tokens = 10;
+            } else {
+              requestBody.max_tokens = 10;
+            }
             response = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
               },
-              body: JSON.stringify({
-                model: config.api.openai?.model || 'gpt-5-nano',
-                messages: [{ role: 'user', content: testQuery }],
-                max_tokens: 10,
-              }),
+              body: JSON.stringify(requestBody),
             });
       } else if (platform === 'perplexity') {
         response = await fetch('https://api.perplexity.ai/chat/completions', {
