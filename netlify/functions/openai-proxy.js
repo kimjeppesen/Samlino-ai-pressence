@@ -40,9 +40,9 @@ exports.handler = async (event, context) => {
 
     // Forward request to OpenAI with timeout handling
     // Netlify Functions have a 10s default timeout, 26s max on free tier
-    // Use 20 seconds to be safe (well under the limit)
+    // Use 15 seconds to be very safe (well under the limit)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {

@@ -103,6 +103,13 @@ export async function callChatGPT(query: string): Promise<AIResponse> {
 
     console.log('[ChatGPT API] Response status:', response.status, response.statusText);
 
+    // Check for timeout errors from Netlify Function BEFORE reading body
+    if (response.status === 504 || response.status === 502) {
+      const errorText = await response.text().catch(() => 'Gateway timeout');
+      console.error('[ChatGPT API] Gateway timeout:', errorText);
+      throw new Error('Request timeout: The API call took too long. This may be a temporary issue. The query will be skipped and processing will continue.');
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[ChatGPT API] Error response:', errorText);

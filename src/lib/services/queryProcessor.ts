@@ -122,7 +122,8 @@ export async function processQuery(
 
         // Add delay between API calls to avoid rate limits
         // Longer delay for OpenAI to avoid Netlify Function timeouts
-        const delay = platform === 'ChatGPT' ? 2000 : 1000;
+        // Increased delay to give function time to recover between calls
+        const delay = platform === 'ChatGPT' ? 3000 : 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -189,9 +190,10 @@ export async function processQueries(
       
       // Small delay between queries to avoid rate limits
       // Longer delay for ChatGPT to avoid Netlify Function timeouts
+      // Increased delay to give function time to recover
       if (i < queries.length - 1) {
         const hasChatGPT = availablePlatforms.includes('ChatGPT');
-        const delay = hasChatGPT ? 2000 : 1000;
+        const delay = hasChatGPT ? 5000 : 2000; // 5 seconds for ChatGPT, 2 seconds for others
         console.log(`[Query Processor] Waiting ${delay}ms before next query...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
