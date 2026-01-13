@@ -1,0 +1,321 @@
+// Mock data for AI Visibility Dashboard
+
+export const kpiData = {
+    overallVisibility: {
+      value: 73,
+      change: 8.2,
+      trend: 'up' as const,
+      label: 'Overall AI Visibility Score',
+      description: 'Across all monitored AI platforms',
+    },
+    totalMentions: {
+      value: 2847,
+      change: 12.5,
+      trend: 'up' as const,
+      label: 'Total AI Mentions',
+      description: 'Last 30 days',
+    },
+    avgSentiment: {
+      value: 82,
+      change: -2.1,
+      trend: 'down' as const,
+      label: 'Sentiment Score',
+      description: 'Positive mention rate',
+    },
+    competitorRank: {
+      value: 2,
+      change: 1,
+      trend: 'up' as const,
+      label: 'Competitor Ranking',
+      description: 'In your industry category',
+    },
+  };
+  
+  export const platformData = [
+    {
+      id: 'chatgpt',
+      name: 'ChatGPT',
+      icon: '🤖',
+      visibility: 78,
+      mentions: 1245,
+      sentiment: 85,
+      change: 5.2,
+      trend: 'up' as const,
+      color: 'hsl(var(--chart-1))',
+    },
+    {
+      id: 'claude',
+      name: 'Claude',
+      icon: '🧠',
+      visibility: 71,
+      mentions: 687,
+      sentiment: 88,
+      change: 12.8,
+      trend: 'up' as const,
+      color: 'hsl(var(--chart-2))',
+    },
+    {
+      id: 'perplexity',
+      name: 'Perplexity',
+      icon: '🔍',
+      visibility: 65,
+      mentions: 524,
+      sentiment: 79,
+      change: -3.4,
+      trend: 'down' as const,
+      color: 'hsl(var(--chart-3))',
+    },
+    {
+      id: 'gemini',
+      name: 'Gemini',
+      icon: '✨',
+      visibility: 69,
+      mentions: 391,
+      sentiment: 76,
+      change: 8.1,
+      trend: 'up' as const,
+      color: 'hsl(var(--chart-4))',
+    },
+  ];
+  
+  export const visibilityTrendData = [
+    { date: 'Nov 1', chatgpt: 72, claude: 65, perplexity: 68, gemini: 62 },
+    { date: 'Nov 8', chatgpt: 74, claude: 67, perplexity: 66, gemini: 64 },
+    { date: 'Nov 15', chatgpt: 73, claude: 69, perplexity: 67, gemini: 65 },
+    { date: 'Nov 22', chatgpt: 76, claude: 70, perplexity: 65, gemini: 67 },
+    { date: 'Nov 29', chatgpt: 75, claude: 68, perplexity: 64, gemini: 68 },
+    { date: 'Dec 6', chatgpt: 77, claude: 71, perplexity: 66, gemini: 69 },
+    { date: 'Dec 13', chatgpt: 78, claude: 71, perplexity: 65, gemini: 69 },
+  ];
+  
+  export const mentionsTrendData = [
+    { date: 'Nov 1', mentions: 412 },
+    { date: 'Nov 8', mentions: 478 },
+    { date: 'Nov 15', mentions: 523 },
+    { date: 'Nov 22', mentions: 489 },
+    { date: 'Nov 29', mentions: 567 },
+    { date: 'Dec 6', mentions: 612 },
+    { date: 'Dec 13', mentions: 766 },
+  ];
+  
+  export const queryData = [
+    {
+      id: '1',
+      query: 'Best project management software for startups',
+      platform: 'ChatGPT',
+      mentioned: true,
+      position: 2,
+      sentiment: 'positive',
+      date: '2024-12-13',
+      context: 'Recommended as a top choice for growing teams',
+    },
+    {
+      id: '2',
+      query: 'Alternatives to Monday.com',
+      platform: 'Claude',
+      mentioned: true,
+      position: 1,
+      sentiment: 'positive',
+      date: '2024-12-12',
+      context: 'Listed first with comprehensive feature breakdown',
+    },
+    {
+      id: '3',
+      query: 'Team collaboration tools comparison',
+      platform: 'Perplexity',
+      mentioned: true,
+      position: 4,
+      sentiment: 'neutral',
+      date: '2024-12-12',
+      context: 'Mentioned briefly in comparison table',
+    },
+    {
+      id: '4',
+      query: 'Best Asana alternatives 2024',
+      platform: 'Gemini',
+      mentioned: false,
+      position: null,
+      sentiment: 'negative',
+      date: '2024-12-11',
+      context: 'Not mentioned in the response',
+    },
+    {
+      id: '5',
+      query: 'Enterprise project management solutions',
+      platform: 'ChatGPT',
+      mentioned: true,
+      position: 3,
+      sentiment: 'positive',
+      date: '2024-12-11',
+      context: 'Highlighted for scalability features',
+    },
+    {
+      id: '6',
+      query: 'Remote team management tools',
+      platform: 'Claude',
+      mentioned: true,
+      position: 2,
+      sentiment: 'positive',
+      date: '2024-12-10',
+      context: 'Praised for async collaboration features',
+    },
+    {
+      id: '7',
+      query: 'Affordable project tracking software',
+      platform: 'Perplexity',
+      mentioned: true,
+      position: 5,
+      sentiment: 'neutral',
+      date: '2024-12-10',
+      context: 'Mentioned in budget options section',
+    },
+    {
+      id: '8',
+      query: 'Best tools for agile teams',
+      platform: 'ChatGPT',
+      mentioned: true,
+      position: 1,
+      sentiment: 'positive',
+      date: '2024-12-09',
+      context: 'Top recommendation for agile workflows',
+    },
+  ];
+  
+  export const competitorData = [
+    {
+      id: '1',
+      name: 'Your Brand',
+      visibility: 73,
+      mentions: 2847,
+      sentiment: 82,
+      growth: 8.2,
+      isUser: true,
+    },
+    {
+      id: '2',
+      name: 'Competitor A',
+      visibility: 81,
+      mentions: 3421,
+      sentiment: 78,
+      growth: 5.1,
+      isUser: false,
+    },
+    {
+      id: '3',
+      name: 'Competitor B',
+      visibility: 68,
+      mentions: 2156,
+      sentiment: 85,
+      growth: -2.3,
+      isUser: false,
+    },
+    {
+      id: '4',
+      name: 'Competitor C',
+      visibility: 62,
+      mentions: 1834,
+      sentiment: 71,
+      growth: 11.4,
+      isUser: false,
+    },
+    {
+      id: '5',
+      name: 'Competitor D',
+      visibility: 55,
+      mentions: 1245,
+      sentiment: 76,
+      growth: 3.7,
+      isUser: false,
+    },
+  ];
+  
+  export const competitorTrendData = [
+    { date: 'Nov 1', yourBrand: 68, competitorA: 79, competitorB: 70, competitorC: 55 },
+    { date: 'Nov 8', yourBrand: 70, competitorA: 80, competitorB: 69, competitorC: 57 },
+    { date: 'Nov 15', yourBrand: 69, competitorA: 79, competitorB: 68, competitorC: 58 },
+    { date: 'Nov 22', yourBrand: 71, competitorA: 80, competitorB: 68, competitorC: 60 },
+    { date: 'Nov 29', yourBrand: 72, competitorA: 81, competitorB: 67, competitorC: 61 },
+    { date: 'Dec 6', yourBrand: 72, competitorA: 80, competitorB: 68, competitorC: 62 },
+    { date: 'Dec 13', yourBrand: 73, competitorA: 81, competitorB: 68, competitorC: 62 },
+  ];
+  
+  export const recommendations: {
+    id: string;
+    title: string;
+    description: string;
+    impact: 'high' | 'medium' | 'low';
+    effort: 'high' | 'medium' | 'low';
+    category: string;
+    platforms: string[];
+  }[] = [
+    {
+      id: '1',
+      title: 'Increase Technical Documentation',
+      description: 'AI models cite well-structured technical documentation more frequently. Consider expanding your public documentation and developer guides.',
+      impact: 'high',
+      effort: 'medium',
+      category: 'Content',
+      platforms: ['ChatGPT', 'Claude'],
+    },
+    {
+      id: '2',
+      title: 'Publish Comparison Content',
+      description: 'Create detailed comparison pages between your product and competitors. AI responses often pull from structured comparison content.',
+      impact: 'high',
+      effort: 'low',
+      category: 'SEO',
+      platforms: ['Perplexity', 'ChatGPT'],
+    },
+    {
+      id: '3',
+      title: 'Optimize Pricing Page Structure',
+      description: 'Your pricing page lacks clear feature comparisons. AI models struggle to accurately represent your pricing tiers.',
+      impact: 'medium',
+      effort: 'low',
+      category: 'Content',
+      platforms: ['Gemini', 'Claude'],
+    },
+    {
+      id: '4',
+      title: 'Build Industry Authority Content',
+      description: 'Publish thought leadership content on industry trends. AI models are increasingly citing authoritative blog posts and whitepapers.',
+      impact: 'high',
+      effort: 'high',
+      category: 'Authority',
+      platforms: ['ChatGPT', 'Claude', 'Perplexity'],
+    },
+    {
+      id: '5',
+      title: 'Improve FAQ Coverage',
+      description: 'Your FAQ section is missing common queries that competitors cover. Expand to address more user questions directly.',
+      impact: 'medium',
+      effort: 'low',
+      category: 'Content',
+      platforms: ['Perplexity', 'Gemini'],
+    },
+    {
+      id: '6',
+      title: 'Enhance Integration Documentation',
+      description: 'Document your API and third-party integrations more thoroughly. Integration-related queries often miss your brand.',
+      impact: 'medium',
+      effort: 'medium',
+      category: 'Technical',
+      platforms: ['ChatGPT', 'Claude'],
+    },
+  ];
+  
+  export const dateRangeOptions = [
+    { label: 'Last 7 days', value: '7d' },
+    { label: 'Last 30 days', value: '30d' },
+    { label: 'Last 90 days', value: '90d' },
+    { label: 'This year', value: 'ytd' },
+  ];
+  
+  export const platformFilterOptions = [
+    { label: 'All Platforms', value: 'all' },
+    { label: 'ChatGPT', value: 'chatgpt' },
+    { label: 'Claude', value: 'claude' },
+    { label: 'Perplexity', value: 'perplexity' },
+    { label: 'Gemini', value: 'gemini' },
+  ];
+  
